@@ -1,0 +1,35 @@
+FROM Dockerfile-php-yii2-base
+
+RUN  apt-get install -y libwebp-dev && \
+    docker-php-ext-configure gd --with-webp
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg
+# External vars for configuration
+ARG SOURCE
+ARG PRIVATE_REPO_PASSWORD
+
+COPY ./docker/nginx/$SOURCE/$SOURCE.conf /etc/nginx/nginx.conf
+
+WORKDIR /app
+COPY . /app/
+ENV TZ=Asia/Tashkent
+
+COPY ./cron /etc/cron.d/crontab
+# Give execution rights on the cron job
+RUN chmod 0644 /etc/cron.d/crontab
+# Apply cron job
+RUN crontab /etc/cron.d/crontab
+
+RUN mkdir -p /app/$SOURCE/web/assets
+RUN chmod -R 777 /app/$SOURCE/web/assets
+RUN mkdir -p /app/$SOURCE/runtime
+RUN chmod -R 777 /app/$SOURCE/runtime
+RUN mkdir -p /app/credentials/google-cloud/
+RUN chmod -R 777 /app/credentials/google-cloud/
+RUN mkdir -p /app/credentials/jwt/
+RUN chmod -R 777 /app/credentials/jwt/
+RUN mkdir -p /app/common/runtime
+RUN chmod -R 777 /app/common/runtime
+RUN mkdir -p /app/common/runtime/queue
+RUN mkdir -p /app/common/runtime/cache
+RUN chmod -R 777 /app/common/runtime/cache
+RUN chmod -R 777 /app/common/runtime/queue

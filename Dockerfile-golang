@@ -1,0 +1,22 @@
+# workspace (GOPATH) configured at /go
+FROM golang:1.15.0 as builder
+
+
+#
+RUN mkdir -p $GOPATH/src/bitbucket.org/alien_soft/sv_api_gateway
+WORKDIR $GOPATH/src/bitbucket.org/alien_soft/sv_api_gateway
+
+# Copy the local package files to the container's workspace.
+COPY . ./
+
+# installing depends and build
+RUN export CGO_ENABLED=0 && \
+    export GOOS=linux && \
+    make build && \
+    mv ./bin/sv_api_gateway /
+
+
+
+FROM alpine
+COPY --from=builder sv_api_gateway .
+ENTRYPOINT ["/sv_api_gateway"]

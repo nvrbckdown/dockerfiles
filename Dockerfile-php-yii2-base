@@ -1,0 +1,44 @@
+FROM yiisoftware/yii2-php:7.4-fpm-nginx
+
+# External vars for configuration
+ARG SOURCE
+ARG PRIVATE_REPO_PASSWORD
+
+COPY ./docker/nginx/$SOURCE/$SOURCE.conf /etc/nginx/nginx.conf
+
+WORKDIR /app
+COPY . /app/
+ENV TV="Asia/Tashkent"
+# Install modules
+RUN apt-get update && apt-get install -y \
+    libfreetype6-dev \
+    libjpeg62-turbo-dev \
+    libicu-dev \
+    libzip-dev \
+    libonig-dev \
+    wget \
+    git \
+    net-tools \
+    vim \
+    nano \
+    cron \
+    --no-install-recommends
+
+RUN docker-php-ext-install zip intl mbstring pdo_mysql exif gd
+
+COPY ./docker/install-composer.sh /
+COPY ./docker/php.ini /usr/local/etc/php/
+COPY ./docker/www.conf /usr/local/etc/php/
+
+RUN apt-get purge -y g++ \
+    && apt-get autoremove -y \
+    && rm -r /var/lib/apt/lists/* \
+    && rm -rf /tmp/* \
+    && sh /install-composer.sh \
+    && rm /install-composer.sh
+
+RUN usermod -u 1000 www-data
+RUN composer config --auth github-oauth.github.com $PRIVATE_REPO_PASSWORD
+RUN composer install --prefer-dist
+
+EXPOSE 9000
